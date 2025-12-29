@@ -3,7 +3,6 @@ set -eu
 
 APP_DIR="${APP_DIR:-/var/www/html/laravel-crm}"
 
-# tenta detectar usuário comum de webserver
 APP_USER="${APP_USER:-}"
 if [ -z "${APP_USER}" ]; then
   for u in www-data nginx apache; do
