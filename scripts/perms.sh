@@ -3,21 +3,10 @@ set -eu
 
 APP_DIR="${APP_DIR:-/var/www/html/laravel-crm}"
 
-APP_USER="${APP_USER:-}"
-if [ -z "${APP_USER}" ]; then
-  for u in www-data nginx apache; do
-    if id "$u" >/dev/null 2>&1; then
-      APP_USER="$u"
-      break
-    fi
-  done
-  [ -z "${APP_USER}" ] && APP_USER="www-data"
-fi
+APP_USER="${APP_USER:-www-data}"
+APP_GROUP="${APP_GROUP:-www-data}"
 
-APP_GROUP="${APP_GROUP:-$APP_USER}"
-
-echo "[perms] APP_DIR=$APP_DIR"
-echo "[perms] APP_USER=$APP_USER APP_GROUP=$APP_GROUP"
+echo "[perms] APP_DIR=$APP_DIR user=$APP_USER group=$APP_GROUP"
 
 mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/bootstrap/cache"
 touch "$APP_DIR/storage/logs/laravel.log" || true
