@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  krayin:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - krayin_storage:/var/www/html/laravel-crm/storage
+      - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
+
+  krayin-worker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - krayin_storage:/var/www/html/laravel-crm/storage
+      - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
+    command: ["sh","-lc","php artisan queue:work --sleep=3 --tries=3 --timeout=120"]
+
+  krayin-scheduler:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - krayin_storage:/var/www/html/laravel-crm/storage
+      - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
+    command: ["sh","-lc","while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: ["mysqld","--default-authentication-plugin=mysql_native_password"]
+    volumes:
+      - krayin_mysql:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server","--appendonly","yes"]
+    volumes:
+      - krayin_redis:/data
+
+volumes:
+  krayin_storage:
+  krayin_cache:
+  krayin_mysql:
+  krayin_redis:
