@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   krayin:
     build: .
@@ -9,8 +7,10 @@ services:
       - mysql
       - redis
     volumes:
+      - ./scripts:/scripts:ro
       - krayin_storage:/var/www/html/laravel-crm/storage
       - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
+    command: ["sh","-lc","sh /scripts/init.sh && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf"]
 
   krayin-worker:
     build: .
@@ -20,9 +20,10 @@ services:
       - mysql
       - redis
     volumes:
+      - ./scripts:/scripts:ro
       - krayin_storage:/var/www/html/laravel-crm/storage
       - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
-    command: ["sh","-lc","php artisan queue:work --sleep=3 --tries=3 --timeout=120"]
+    command: ["sh","-lc","sh /scripts/init.sh && php /var/www/html/laravel-crm/artisan queue:work --sleep=3 --tries=3 --timeout=120"]
 
   krayin-scheduler:
     build: .
@@ -32,9 +33,10 @@ services:
       - mysql
       - redis
     volumes:
+      - ./scripts:/scripts:ro
       - krayin_storage:/var/www/html/laravel-crm/storage
       - krayin_cache:/var/www/html/laravel-crm/bootstrap/cache
-    command: ["sh","-lc","while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+    command: ["sh","-lc","sh /scripts/init.sh && while true; do php /var/www/html/laravel-crm/artisan schedule:run --no-interaction; sleep 60; done"]
 
   mysql:
     image: mysql:8.0
