@@ -14,7 +14,7 @@
 
 ## Domínio
 - Em "Domains for krayin", colocar apenas:
-  crm.catapultadigital.com.br
+  crm.EXEMPLO.com.br
 - Não coloque https://
 - Depois clique em Generate Domain e habilite SSL no Coolify
 
