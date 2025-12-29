@@ -7,11 +7,20 @@ RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 echo "[init] start"
 echo "[init] APP_DIR=$APP_DIR RUN_MIGRATIONS=$RUN_MIGRATIONS"
 
-sh /scripts/perms.sh || true
+# Fail fast: APP_KEY é obrigatório em produção.
+if [ -z "${APP_KEY:-}" ]; then
+  echo "[init] ERROR: APP_KEY não definido."
+  echo "[init] Defina APP_KEY nas Environment Variables do Coolify."
+  echo "[init] Dica: gere com: php artisan key:generate --show"
+  exit 1
+fi
+
+# Permissões
+/scripts/perms.sh || true
 
 cd "$APP_DIR"
 
-# Espera MySQL ficar acessível via PDO
+# Espera MySQL via PDO (robusto e sem dependência de netcat)
 if [ -n "${DB_HOST:-}" ]; then
   echo "[init] waiting mysql ${DB_HOST}:${DB_PORT:-3306}"
   for i in $(seq 1 60); do
@@ -27,10 +36,10 @@ if [ -n "${DB_HOST:-}" ]; then
   done
 fi
 
-# Limpa caches para evitar estados ruins após deploy
+# Limpa caches para evitar estados ruins pós deploy
 php artisan optimize:clear >/dev/null 2>&1 || true
 
-# Rodar migrações só quando você decidir
+# Rodar migrações quando você decidir (primeiro deploy controlado)
 if [ "$RUN_MIGRATIONS" = "true" ]; then
   echo "[init] running migrations"
   php artisan migrate --force || true
