@@ -2,40 +2,38 @@
 set -eu
 
 APP_DIR="${APP_DIR:-/var/www/html/laravel-crm}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 
-echo "[init] Starting init..."
-echo "[init] APP_DIR=$APP_DIR"
+echo "[init] start"
+echo "[init] APP_DIR=$APP_DIR RUN_MIGRATIONS=$RUN_MIGRATIONS"
 
-# Ajusta permissões primeiro
 sh /scripts/perms.sh || true
 
 cd "$APP_DIR"
 
-# Espera MySQL
+# Espera MySQL ficar acessível via PDO
 if [ -n "${DB_HOST:-}" ]; then
-  echo "[init] Waiting for MySQL at ${DB_HOST:-mysql}:${DB_PORT:-3306}..."
+  echo "[init] waiting mysql ${DB_HOST}:${DB_PORT:-3306}"
   for i in $(seq 1 60); do
-    if php -r 'try { new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_DATABASE"), getenv("DB_USERNAME"), getenv("DB_PASSWORD")); echo "ok\n"; } catch (Exception $e) { exit(1); }' >/dev/null 2>&1; then
-      echo "[init] MySQL OK."
-      break
-    fi
+    php -r '
+      try {
+        $h=getenv("DB_HOST"); $p=getenv("DB_PORT")?: "3306";
+        $d=getenv("DB_DATABASE"); $u=getenv("DB_USERNAME"); $pw=getenv("DB_PASSWORD");
+        new PDO("mysql:host={$h};port={$p};dbname={$d}", $u, $pw);
+        exit(0);
+      } catch (Exception $e) { exit(1); }
+    ' >/dev/null 2>&1 && break
     sleep 2
   done
 fi
 
-# Opcional: espera Redis (só se você realmente usar redis)
-if [ -n "${REDIS_HOST:-}" ] && [ "${CACHE_DRIVER:-}" = "redis" ]; then
-  echo "[init] Redis configured at ${REDIS_HOST:-redis}:${REDIS_PORT:-6379} (not hard-blocking)."
-fi
+# Limpa caches para evitar estados ruins após deploy
+php artisan optimize:clear >/dev/null 2>&1 || true
 
-echo "[init] Clearing caches..."
-php artisan optimize:clear || true
-
-# Migrações: só se você quiser automatizar
-# Eu recomendo deixar isso ligado em ambiente controlado (primeiro deploy) e depois desligar.
-if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
-  echo "[init] Running migrations..."
+# Rodar migrações só quando você decidir
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+  echo "[init] running migrations"
   php artisan migrate --force || true
 fi
 
-echo "[init] Done."
+echo "[init] done"
