@@ -13,7 +13,7 @@
    - Copie o conteúdo de .env.example e ajuste senhas e domínio
    - Não commite .env com segredos
 4) Configure o Domain no serviço "krayin":
-   - crm.catapultadigital.com.br
+   - crm.exemplo.com.br
    - porta interna 80
 5) Ative SSL no Coolify
 6) Deploy
